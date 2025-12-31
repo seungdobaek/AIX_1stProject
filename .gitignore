@@ -1,5 +1,3 @@
-# data
-KJH/data/
-KJH/outputs/
-*.csv
+
 *.zip
+.env
