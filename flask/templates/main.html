@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>전력 수요 분석 및 모델 비교</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #4834d4 0%, #686de0 100%);
+      --bg-color: #f0f2f5;
+      --card-bg: #ffffff;
+      --text-main: #1e272e;
+      --text-sub: #485460;
+      --shadow: 0 10px 30px rgba(0,0,0,0.10);
+      --shadow-soft: 0 12px 40px rgba(0,0,0,0.08);
+
+      --dnn-color: #4834d4;
+      --xgb-color: #20bf6b;
+      --lstm-color: #f7b731;
+
+      --border: #edeff2;
+      --muted: #a4b0be;
+      --hint: #747d8c;
+      --panel: #f8faff;
+
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+
+    /* ===== Header / Hero ===== */
+    header {
+      background: var(--primary-gradient);
+      color: #fff;
+      padding: 3.2rem 1rem 5.2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,.20) 0 18%, transparent 19%),
+        radial-gradient(circle at 85% 35%, rgba(255,255,255,.14) 0 16%, transparent 17%),
+        radial-gradient(circle at 55% 85%, rgba(255,255,255,.10) 0 18%, transparent 19%);
+      transform: rotate(10deg);
+      pointer-events:none;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.25rem;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      position: relative;
+      z-index: 1;
+    }
+    header p {
+      margin: 12px auto 0;
+      max-width: 760px;
+      opacity: 0.92;
+      font-size: 1rem;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-actions{
+      margin-top: 22px;
+      display:flex;
+      gap: 10px;
+      justify-content:center;
+      flex-wrap:wrap;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-btn{
+      display:inline-flex;
+      align-items:center;
+      gap: 10px;
+      text-decoration:none;
+      background: #fff;
+      color: #4834d4;
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-weight: 900;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .hero-btn:hover{ transform: translateY(-2px); box-shadow: 0 14px 35px rgba(0,0,0,0.18); }
+    .hero-ghost{
+      display:inline-flex;
+      align-items:center;
+      gap: 10px;
+      text-decoration:none;
+      background: rgba(255,255,255,.14);
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-weight: 900;
+      border: 1px solid rgba(255,255,255,.22);
+      transition: transform .2s ease, background .2s ease;
+    }
+    .hero-ghost:hover{ transform: translateY(-2px); background: rgba(255,255,255,.18); }
+
+    /* ===== Container / Card ===== */
+    .container {
+      max-width: 1200px;
+      margin: -1.2rem auto 4rem; /* 덜 끌어올림 */
+      padding: 0 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-soft);
+      margin-bottom: 2rem;
+      border: 1px solid rgba(237,239,242,0.9);
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 900;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #2f3542;
+    }
+    .section-title::before {
+      content: '';
+      width: 6px;
+      height: 24px;
+      background: #4834d4;
+      border-radius: 3px;
+    }
+
+    .subtext {
+      font-size: 0.86rem;
+      color: var(--hint);
+      margin-top: -8px;
+      margin-bottom: 18px;
+    }
+
+    /* ===== Tabs ===== */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 10px 18px;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--muted);
+      cursor: pointer;
+      transition: 0.25s;
+      border-radius: 12px;
+    }
+    .tab-btn:hover { background: rgba(72, 52, 212, 0.08); color: #6c5ce7; }
+    .tab-btn.active {
+      background: #4834d4;
+      color: white;
+      box-shadow: 0 8px 18px rgba(72,52,212,0.25);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ===== Simulator Layout ===== */
+    .simulator-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+      align-items: stretch;
+    }
+    @media (max-width: 900px) {
+      .simulator-grid { grid-template-columns: 1fr; }
+      .card { padding: 1.7rem; }
+    }
+
+    .step-hint{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:.78rem;
+      font-weight:900;
+      color:#636e72;
+      background:#f4f6fb;
+      border: 1px solid #e6ebf5;
+      padding: 6px 10px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .step-dot{
+      width:8px; height:8px; border-radius:50%;
+      background:#4834d4;
+      box-shadow: 0 0 0 4px rgba(72,52,212,0.12);
+    }
+
+    .params-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .input-group { margin-bottom: 1rem; }
+    .input-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 900;
+      margin-bottom: 6px;
+      color: var(--text-sub);
+    }
+    .input-group input, .input-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease;
+      background: white;
+    }
+    .input-group input:focus, .input-group select:focus{
+      border-color: rgba(72,52,212,0.55);
+      box-shadow: 0 0 0 4px rgba(72,52,212,0.12);
+    }
+
+    .btn-main {
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      padding: 18px;
+      border-radius: 14px;
+      font-size: 1.08rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.25s;
+      width: 100%;
+      box-shadow: 0 12px 25px rgba(72,52,212,0.18);
+    }
+    .btn-main:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 32px rgba(72, 52, 212, 0.28);
+    }
+    .btn-main:active{ transform: translateY(-1px); }
+
+    /* ===== Result Panel ===== */
+    .result-panel { display: flex; flex-direction: column; gap: 12px; }
+    .result-meta{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+      justify-content: space-between;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 900;
+      border: 1px solid rgba(72,52,212,0.18);
+      background: rgba(72,52,212,0.06);
+      color: #4834d4;
+    }
+    .badge .mini{
+      width:7px; height:7px; border-radius: 50%;
+      background: #4834d4;
+    }
+
+    .result-display {
+      background: var(--panel);
+      border-radius: var(--radius-md);
+      padding: 2rem;
+      border: 2px dashed rgba(72, 52, 212, 0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex-grow: 1;
+      min-height: 360px;
+      animation: fadeUp .55s ease;
+    }
+    @keyframes fadeUp{
+      from{ opacity:0; transform: translateY(14px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    .result-val {
+      font-size: 3.35rem;
+      font-weight: 900;
+      color: #4834d4;
+      margin: 10px 0;
+      letter-spacing: -1px;
+    }
+
+    .result-subrow{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content:center;
+      margin-top: 10px;
+    }
+    .pill{
+      background: white;
+      border: 1px solid #e0e6ed;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: .82rem;
+      font-weight: 900;
+      color: #57606f;
+    }
+    .pill.good{ color: #20bf6b; border-color: rgba(32,191,107,0.35); background: rgba(32,191,107,0.06); }
+    .pill.neutral{ color: #4834d4; border-color: rgba(72,52,212,0.35); background: rgba(72,52,212,0.06); }
+
+    /* Placeholder / Loading */
+    #result-placeholder{
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--muted);
+      border: 2px dashed #dcdde1;
+      border-radius: var(--radius-md);
+      padding: 24px;
+      min-height: 360px;
+      background: rgba(255,255,255,0.35);
+    }
+
+    .loading { display: none; text-align: center; padding: 42px; min-height: 360px; border-radius: var(--radius-md); background: rgba(255,255,255,0.35); border: 1px solid rgba(237,239,242,0.9); }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4834d4;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ===== Algo Cards ===== */
+    .algo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; }
+    .algo-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .algo-card:hover{ transform: translateY(-4px); box-shadow: 0 14px 34px rgba(0,0,0,0.10); }
+    .algo-header {
+      padding: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafbfc;
+      border-bottom: 1px solid #eee;
+      gap: 10px;
+    }
+    .algo-name{ font-weight: 900; }
+    .algo-badges{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    .best-badge{
+      background: #4834d4;
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 999px;
+      box-shadow: 0 10px 20px rgba(72,52,212,0.22);
+    }
+    .tag-badge{
+      background: rgba(0,0,0,0.05);
+      color: #2f3542;
+      font-size: .72rem;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .algo-img-container {
+      width: 100%;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: #fff;
+    }
+    .algo-img-container img { width: 90%; height: 90%; object-fit: contain; }
+
+    .algo-stats {
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: var(--panel);
+      border-top: 1px solid rgba(237,239,242,0.9);
+      border-bottom: 1px solid rgba(237,239,242,0.9);
+    }
+    .stat-box {
+      background: white;
+      padding: 10px;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid #e0e6ed;
+    }
+    .stat-label{ font-size:0.7rem; color:#7f8c8d; font-weight:900; }
+    .stat-val { font-weight: 900; font-size: 1.15rem; margin-top:4px; }
+    .algo-desc { padding: 1rem; font-size: 0.88rem; color: var(--text-sub); }
+    .algo-points{
+      padding: 0 1rem 1.2rem;
+      margin: 0;
+      color: #57606f;
+      font-size: .85rem;
+      line-height: 1.75;
+    }
+    .algo-points li{ margin: 4px 0; }
+
+    /* ===== Summary section ===== */
+    .summary-grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .summary-grid{ grid-template-columns: 1fr; } }
+
+    .summary-box{
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.06);
+    }
+    .summary-box h3{
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      color: #2f3542;
+    }
+    .summary-list{
+      margin: 0;
+      padding-left: 18px;
+      color: #57606f;
+      font-size: .92rem;
+      line-height: 1.85;
+    }
+    .kpi-row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    @media (max-width: 420px) { .kpi-row{ grid-template-columns: 1fr; } }
+    .kpi{
+      background: var(--panel);
+      border: 1px solid rgba(72,52,212,0.12);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .kpi .k{ font-size:.72rem; font-weight: 900; color:#7f8c8d; }
+    .kpi .v{ font-size:1.15rem; font-weight: 900; margin-top:4px; color:#2f3542; }
+
+    /* ===== Footer ===== */
+    footer {
+      background: #2f3542;
+      color: #a4b0be;
+      text-align: center;
+      padding: 2rem;
+      margin-top: 4rem;
+    }
+    footer a{ color:#dfe4ea; text-decoration:none; font-weight:800; }
+    footer a:hover{ text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>전력 수요 예측 모델 분석 대시보드</h1>
+    <p>기상·환경 데이터를 기반으로 AI 전력 수요를 예측하고, DNN / XGBoost 모델 성능을 비교합니다.</p>
+
+    <div class="hero-actions">
+      <a class="hero-btn" href="#simulator" aria-label="시뮬레이터로 이동">예측 바로 해보기 ↓</a>
+      <a class="hero-ghost" href="#models" aria-label="모델 비교로 이동">모델 성능 보기</a>
+      <a class="hero-ghost" href="/preprocessing" aria-label="전처리 과정 보기">전처리 과정</a>
+      <a class="hero-ghost" href="/eda" aria-label="EDA 보기">EDA 분석</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- 예측 시뮬레이터 카드 -->
+    <div class="card" id="simulator">
+      <div class="section-title">AI 수요 예측 시뮬레이터</div>
+      <div class="subtext">입력 방식(탭)을 선택하고 분석을 실행하면, 예측값과 간단한 해석 지표를 함께 제공합니다.</div>
+
+      <!-- ✅ 탭 순서 변경 + envTab을 기본 active로 -->
+      <div class="tabs" role="tablist" aria-label="예측 입력 방식 탭">
+        <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="envTab" onclick="openTab(event, 'envTab')">환경 변수(시뮬레이션)</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="dateTab" onclick="openTab(event, 'dateTab')">날짜 기준 예측</button>
+      </div>
+
+      <div class="simulator-grid">
+        <div class="input-panel">
+          <div class="step-hint"><span class="step-dot"></span> STEP 1 · 대상 지역 선택</div>
+
+          <div class="input-group">
+            <label for="guSelect">구 선택</label>
+            <select id="guSelect">
+              <option value="">-- 구를 선택하세요 --</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="dongSelect">동 선택</label>
+            <select id="dongSelect" disabled>
+              <option value="">-- 먼저 구를 선택하세요 --</option>
+            </select>
+          </div>
+
+          <div class="step-hint" style="margin-top:6px;"><span class="step-dot"></span> STEP 2 · 입력 방식</div>
+
+          <!-- ✅ 탭 1: 환경 변수 (기본 active) -->
+          <div id="envTab" class="tab-content active" role="tabpanel">
+            <div class="params-grid">
+              <div class="input-group">
+                <label for="minTemp">최저기온 (°C)</label>
+                <input type="number" step="0.1" value="22.5" id="minTemp">
+              </div>
+              <div class="input-group">
+                <label for="groundTemp">지중온도 (3m, °C)</label>
+                <input type="number" step="0.1" value="18.2" id="groundTemp">
+              </div>
+              <div class="input-group">
+                <label for="humidity">상대습도 (%)</label>
+                <input type="number" value="65" id="humidity">
+              </div>
+              <div class="input-group">
+                <label for="pressure">현지기압 (hPa)</label>
+                <input type="number" step="0.1" value="1013.2" id="pressure">
+              </div>
+              <div class="input-group">
+                <label for="sunshine">가조시간 (hr)</label>
+                <input type="number" step="0.1" value="14.5" id="sunshine">
+              </div>
+              <div class="input-group">
+                <label for="isHoliday">특이사항</label>
+                <select id="isHoliday">
+                  <option value="0">평일</option>
+                  <option value="1">휴일/공휴일</option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label for="lag_1d">1일전 전력사용량(KWH)</label>
+                <input type="number" step="100" value="5000" id="lag_1d">
+              </div>
+              <div class="input-group">
+                <label for="1ag_7d">7일전 전력사용량(KWH)</label>
+                <input type="number" step="100" value="5000" id="lag_7d">
+              </div>
+            </div>
+            <p class="subtext" style="margin:0 0 14px;">
+              * 환경 변수를 직접 입력해 “가정 시뮬레이션”으로 예측을 비교할 수 있어요.
+            </p>
+          </div>
+
+          <!-- ✅ 탭 2: 날짜 기준 -->
+          <div id="dateTab" class="tab-content" role="tabpanel">
+            <div class="input-group">
+              <label for="targetDate">예측 대상 날짜</label>
+              <input type="date" id="targetDate">
+            </div>
+            <p class="subtext" style="margin:0 0 14px;">
+              * 선택한 날짜의 공공 기상 데이터 API 수치를 기반으로 자동 예측(데모)합니다.
+            </p>
+          </div>
+
+          <button class="btn-main" onclick="runAI()">분석 및 예측 실행</button>
+        </div>
+
+        <div class="result-panel">
+          <div class="result-meta">
+            <span class="badge"><span class="mini"></span><span id="resultMode">READY</span></span>
+            <span class="badge" style="background: rgba(32,191,107,0.06); border-color: rgba(32,191,107,0.18); color:#20bf6b;">
+              <span class="mini" style="background:#20bf6b;"></span> <span id="resultStatus">대기중</span>
+            </span>
+          </div>
+
+          <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p style="font-weight:900; color:#4834d4; margin:0;">데이터 처리 및 가중치 계산 중...</p>
+            <p style="font-size:.85rem; color:#747d8c; margin:10px 0 0;">(데모) 입력값 기반으로 예측값을 산출합니다.</p>
+          </div>
+
+          <div id="result-placeholder">
+            <div>
+              <div style="font-weight:900; font-size:1.05rem; color:#57606f;">예측 결과 패널</div>
+              <p style="margin:8px 0 0;">
+                탭에서 입력 방식을 고르고 <b>분석 및 예측 실행</b>을 눌러보세요.
+              </p>
+              <p style="margin:10px 0 0; font-size:.85rem; color:#95a5a6;">
+                Tip: “환경 변수” 탭에서 휴일/평일을 바꾸면 결과 차이가 확 보여요.
+              </p>
+            </div>
+          </div>
+
+          <div id="result-content" class="result-display" style="display:none;">
+            <div id="activeTabTag" class="badge" style="background:#4834d4; color:#fff; border-color: rgba(255,255,255,0.0);">
+              <span class="mini" style="background:#fff;"></span> DATE-BASED AI
+            </div>
+
+            <div style="font-weight: 900; color: #747d8c;">최종 예측 전력 수요</div>
+
+            <div class="result-val">
+              <span id="resultVal">0</span>
+              <span style="font-size:1.45rem; color:#747d8c; margin-left:5px;">kW</span>
+            </div>
+
+            <p id="resultDesc" style="font-size: 0.88rem; color: #20bf6b; font-weight: 900; margin-top: 14px;">분석 완료</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 모델 비교 섹션 -->
+    <div class="card" id="models">
+      <div class="section-title">모델 성능 비교 및 검증 데이터</div>
+      <div class="subtext">총 9개의 모델을 학습하고 MSE, MAE, RMSE를 비교하여 최적의 모델을 선정했습니다.</div>
+
+      <!-- 모델 비교 차트 -->
+      <div style="margin: 2rem 0; text-align: center;">
+        <img src="/static/model_comparison.png" alt="모델 성능 비교 차트" style="max-width: 100%; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.12);">
+      </div>
+
+      <!-- 베스트 모델 -->
+      <div style="background: linear-gradient(135deg, #f8faff 0%, #e8eeff 100%); padding: 2rem; border-radius: 16px; margin: 2rem 0; border: 2px solid #4834d4;">
+        <h3 style="margin: 0 0 1rem 0; color: #4834d4; font-size: 1.3rem; font-weight: 900;">🏆 Best Model: LightGBM</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+          <div style="background: white; padding: 1rem; border-radius: 12px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #7f8c8d; font-weight: 700; margin-bottom: 0.5rem;">MSE</div>
+            <div style="font-size: 1.4rem; font-weight: 900; color: #4834d4;">7.97B</div>
+          </div>
+          <div style="background: white; padding: 1rem; border-radius: 12px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #7f8c8d; font-weight: 700; margin-bottom: 0.5rem;">MAE</div>
+            <div style="font-size: 1.4rem; font-weight: 900; color: #20bf6b;">12,271</div>
+          </div>
+          <div style="background: white; padding: 1rem; border-radius: 12px; text-align: center;">
+            <div style="font-size: 0.75rem; color: #7f8c8d; font-weight: 700; margin-bottom: 0.5rem;">RMSE</div>
+            <div style="font-size: 1.4rem; font-weight: 900; color: #f7b731;">89,264</div>
+          </div>
+        </div>
+        <p style="margin: 1.5rem 0 0 0; color: #57606f; font-size: 0.95rem; line-height: 1.7;">
+          LightGBM은 모든 오차 지표에서 가장 우수한 성능을 보였으며, 특히 MAE(평균 절대 오차)가 가장 낮아 실제 예측값의 정확도가 뛰어납니다.
+        </p>
+      </div>
+
+      <!-- 모델별 상세 비교 -->
+      <div class="algo-grid">
+      
+        <!-- EmbeddingDNN (LAG_휴일 포함) -->
+        <div class="algo-card">
+          <div class="algo-header">
+            <span class="algo-name">EmbeddingDNN (LAG_휴일)</span>
+            <div class="algo-badges">
+              <span class="tag-badge">3위</span>
+            </div>
+          </div>
+          <div class="algo-stats" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="stat-box">
+              <div class="stat-label">MSE</div>
+              <div class="stat-val" style="color:#9b59b6; font-size: 0.95rem;">9.31B</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">MAE</div>
+              <div class="stat-val" style="color:#9b59b6; font-size: 0.95rem;">14,028</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">RMSE</div>
+              <div class="stat-val" style="color:#9b59b6; font-size: 0.95rem;">96,494</div>
+            </div>
+          </div>
+          <div class="algo-desc">범주형 변수(지역명)를 Embedding Layer로 학습하여 지역 특성을 반영한 모델입니다.</div>
+          <ul class="algo-points">
+            <li>범주형 변수를 벡터로 학습</li>
+            <li>지역 간 유사도 파악 가능</li>
+            <li>휴일 정보로 패턴 변화 반영</li>
+          </ul>
+        </div>
+
+        <!-- XGBoost -->
+        <div class="algo-card">
+          <div class="algo-header">
+            <span class="algo-name">XGBoost</span>
+            <div class="algo-badges">
+              <span class="tag-badge">4위</span>
+            </div>
+          </div>
+          <div class="algo-stats" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="stat-box">
+              <div class="stat-label">MSE</div>
+              <div class="stat-val" style="color:#20bf6b; font-size: 0.95rem;">17.7B</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">MAE</div>
+              <div class="stat-val" style="color:#20bf6b; font-size: 0.95rem;">13,616</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">RMSE</div>
+              <div class="stat-val" style="color:#20bf6b; font-size: 0.95rem;">132,887</div>
+            </div>
+          </div>
+          <div class="algo-desc">LightGBM 다음으로 우수한 성능을 보였으며, Feature Importance 분석에 강점이 있습니다.</div>
+          <ul class="algo-points">
+            <li>변수 중요도 시각화로 해석 용이</li>
+            <li>과적합 방지 기능 우수</li>
+            <li>안정적인 예측 성능</li>
+          </ul>
+        </div>
+        
+        <!-- LightGBM -->
+        <div class="algo-card" style="border: 2px solid #4834d4;">
+          <div class="algo-header">
+            <span class="algo-name">LightGBM</span>
+            <div class="algo-badges">
+              <span class="best-badge">BEST</span>
+              <span class="tag-badge">최고 정확도</span>
+            </div>
+          </div>
+          <div class="algo-stats" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="stat-box">
+              <div class="stat-label">MSE</div>
+              <div class="stat-val" style="color:#4834d4; font-size: 0.95rem;">7.97B</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">MAE</div>
+              <div class="stat-val" style="color:#20bf6b; font-size: 0.95rem;">12,271</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">RMSE</div>
+              <div class="stat-val" style="color:#f7b731; font-size: 0.95rem;">89,264</div>
+            </div>
+          </div>
+          <div class="algo-desc">Gradient Boosting 기반으로 모든 지표에서 최고 성능을 달성한 베스트 모델입니다.</div>
+          <ul class="algo-points">
+            <li>모든 오차 지표에서 1위 기록</li>
+            <li>변수 중요도 분석 가능</li>
+            <li>빠른 학습 속도와 높은 정확도</li>
+          </ul>
+        </div>
+
+        <!-- SimpleDNN (LAG 포함) -->
+        <div class="algo-card">
+          <div class="algo-header">
+            <span class="algo-name">SimpleDNN (LAG 포함)</span>
+            <div class="algo-badges">
+              <span class="tag-badge">2위</span>
+            </div>
+          </div>
+          <div class="algo-stats" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="stat-box">
+              <div class="stat-label">MSE</div>
+              <div class="stat-val" style="color:#4834d4; font-size: 0.95rem;">8.25B</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">MAE</div>
+              <div class="stat-val" style="color:#4834d4; font-size: 0.95rem;">18,137</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">RMSE</div>
+              <div class="stat-val" style="color:#4834d4; font-size: 0.95rem;">90,848</div>
+            </div>
+          </div>
+          <div class="algo-desc">LAG 피처(과거 전력 사용량)를 추가하면서 성능이 크게 향상된 모델입니다.</div>
+          <ul class="algo-points">
+            <li>LAG 피처 추가로 MSE 68% 감소</li>
+            <li>시계열 패턴 학습 능력 우수</li>
+            <li>구조가 단순하여 학습 속도 빠름</li>
+          </ul>
+        </div>
+
+      </div>
+
+        
+
+        
+
+      <!-- 성능 개선 과정 요약 -->
+      <div style="background: #f8faff; padding: 2rem; border-radius: 16px; margin-top: 2rem; border-left: 4px solid #4834d4;">
+        <h3 style="margin: 0 0 1.2rem 0; color: #4834d4; font-size: 1.2rem; font-weight: 900;">📊 모델 성능 개선 과정</h3>
+        <div style="display: grid; gap: 1rem;">
+          <div style="background: white; padding: 1.2rem; border-radius: 12px;">
+            <strong style="color: #2f3542; font-size: 1rem;">Step 1: 기본 모델 (날짜 미포함)</strong>
+            <p style="margin: 0.5rem 0 0 0; color: #57606f; font-size: 0.9rem;">SimpleDNN 기본 모델로 시작, MSE: 26.3B</p>
+          </div>
+          <div style="background: white; padding: 1.2rem; border-radius: 12px;">
+            <strong style="color: #2f3542; font-size: 1rem;">Step 2: LAG 피처 추가</strong>
+            <p style="margin: 0.5rem 0 0 0; color: #57606f; font-size: 0.9rem;">과거 전력 사용량 정보 추가, MSE: 8.25B (68% 개선 ✨)</p>
+          </div>
+          <div style="background: white; padding: 1.2rem; border-radius: 12px;">
+            <strong style="color: #2f3542; font-size: 1rem;">Step 3: 휴일 정보 추가</strong>
+            <p style="margin: 0.5rem 0 0 0; color: #57606f; font-size: 0.9rem;">공휴일 Binary 피처 추가, MSE: 9.31B</p>
+          </div>
+          <div style="background: white; padding: 1.2rem; border-radius: 12px;">
+            <strong style="color: #2f3542; font-size: 1rem;">Step 4: LightGBM 적용</strong>
+            <p style="margin: 0.5rem 0 0 0; color: #57606f; font-size: 0.9rem;">Gradient Boosting 알고리즘 사용, MSE: 7.97B (최고 성능 🏆)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 프로젝트 요약 섹션 -->
+    <div class="card" id="summary">
+      <div class="section-title">프로젝트 요약</div>
+      <div class="subtext">포트폴리오/면접용으로 프로젝트 핵심을 정리했습니다.</div>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h3>한 줄 소개</h3>
+          <p style="margin:0; color:#57606f; font-size:.95rem; line-height:1.85;">
+            서울시 자치구 단위 전력 수요를 기상·환경 변수로 예측하고, 총 9개의 모델을 비교하여 LightGBM을 최적 모델로 선정한 전력 수요 예측 시스템입니다.
+          </p>
+
+          <div class="kpi-row">
+            <div class="kpi">
+              <div class="k">베스트 모델</div>
+              <div class="v">LightGBM (MAE 12,271)</div>
+            </div>
+            <div class="kpi">
+              <div class="k">성능 개선</div>
+              <div class="v">MSE 70% 감소</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-box">
+          <h3>데이터 규모</h3>
+          <ul class="summary-list">
+            <li>서울시 25개 구, 466개 법정동</li>
+            <li>3년간 일별 데이터 (750K+ 행)</li>
+            <li>기상 변수 10개 + LAG 피처 3개</li>
+            <li>학습/검증/테스트: 70/15/15</li>
+          </ul>
+        </div>
+
+        <div class="summary-box">
+          <h3>모델 비교 결과</h3>
+          <ul class="summary-list">
+            <li>총 9개 모델 학습 및 비교</li>
+            <li>1위: LightGBM (RMSE 89,264)</li>
+            <li>2위: LAG 포함 DNN (MAE 90,848)</li>
+            <li>LAG 피처로 성능 47% 향상</li>
+          </ul>
+        </div>
+
+        <div class="summary-box">
+          <h3>기술 스택</h3>
+          <ul class="summary-list">
+            <li>Backend: Flask, Python</li>
+            <li>모델: TensorFlow, LightGBM, XGBoost</li>
+            <li>Frontend: HTML/CSS/JavaScript</li>
+            <li>데이터: Pandas, NumPy, Scikit-learn</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 핵심 성과 -->
+      <div style="background: linear-gradient(135deg, #f8faff 0%, #e8eeff 100%); padding: 2rem; border-radius: 16px; margin-top: 2rem; border: 2px solid #4834d4;">
+        <h3 style="margin: 0 0 1.5rem 0; color: #4834d4; font-size: 1.25rem; font-weight: 900;">🎯 핵심 성과</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+          <div style="background: white; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #4834d4;">
+            <h4 style="margin: 0 0 0.8rem 0; color: #4834d4; font-size: 1.05rem;">데이터 전처리</h4>
+            <p style="margin: 0; color: #57606f; font-size: 0.9rem; line-height: 1.7;">
+              법정동 코드 정제, 결측치 처리, 기상 데이터 병합을 통해 고품질 학습 데이터셋 구축
+            </p>
+          </div>
+          <div style="background: white; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #20bf6b;">
+            <h4 style="margin: 0 0 0.8rem 0; color: #20bf6b; font-size: 1.05rem;">피처 엔지니어링</h4>
+            <p style="margin: 0; color: #57606f; font-size: 0.9rem; line-height: 1.7;">
+              LAG 피처(1일, 7일, 30일 전) 추가로 시계열 패턴 학습, 성능 68% 향상 달성
+            </p>
+          </div>
+          <div style="background: white; padding: 1.5rem; border-radius: 12px; border-left: 4px solid #f7b731;">
+            <h4 style="margin: 0 0 0.8rem 0; color: #f7b731; font-size: 1.05rem;">모델 최적화</h4>
+            <p style="margin: 0; color: #57606f; font-size: 0.9rem; line-height: 1.7;">
+              9개 모델 비교 분석을 통해 LightGBM 선정, MAE 12,271로 최고 정확도 달성
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 활용 방안 -->
+      <div style="margin-top: 2rem; padding: 1.5rem; background: white; border-radius: 12px; border: 2px solid #edeff2;">
+        <h3 style="margin: 0 0 1rem 0; color: #2f3542; font-size: 1.15rem; font-weight: 900;">💼 활용 시나리오</h3>
+        <div style="display: grid; gap: 0.8rem;">
+          <div style="display: flex; align-items: start; gap: 0.8rem;">
+            <span style="background: #4834d4; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 900; flex-shrink: 0;">전력 공급</span>
+            <p style="margin: 0; color: #57606f; font-size: 0.9rem; line-height: 1.6;">
+              시간대별 전력 수요 예측을 통한 발전량 최적화 및 공급 계획 수립
+            </p>
+          </div>
+          <div style="display: flex; align-items: start; gap: 0.8rem;">
+            <span style="background: #20bf6b; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 900; flex-shrink: 0;">비용 절감</span>
+            <p style="margin: 0; color: #57606f; font-size: 0.9rem; line-height: 1.6;">
+              피크 타임 예측을 통한 전력 구매 전략 수립 및 운영 비용 절감
+            </p>
+          </div>
+          <div style="display: flex; align-items: start; gap: 0.8rem;">
+            <span style="background: #f7b731; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 900; flex-shrink: 0;">정책 지원</span>
+            <p style="margin: 0; color: #57606f; font-size: 0.9rem; line-height: 1.6;">
+              지역별 전력 사용 패턴 분석을 통한 에너지 정책 수립 및 인프라 투자 계획
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p style="margin:0;">© 2025 전력 데이터 분석 프로젝트 | AI 포트폴리오</p>
+    <p style="margin:10px 0 0; font-size:.9rem;">
+      <a href="#simulator">시뮬레이터</a> · <a href="#models">모델 비교</a> · <a href="#summary">프로젝트 요약</a>
+    </p>
+  </footer>
+
+  <script>
+    // 전역 변수
+    let currentTab = 'envTab';
+    let guDongMapping = null;
+    let selectedGu = '';
+    let selectedDong = '';
+
+    // 구-동 매핑 데이터 로드
+    async function loadGuDongMapping() {
+      try {
+        const response = await fetch('/static/gu_dong_mapping.json');
+        const data = await response.json();
+        guDongMapping = data;
+        initializeSelectors();
+      } catch (error) {
+        console.error('구-동 매핑 로드 실패:', error);
+        // 폴백: 기본 구 리스트만 사용
+        const seoulGu = ["강남구","강동구","강북구","강서구","관악구","광진구","구로구","금천구","노원구","도봉구","동대문구","동작구","마포구","서대문구","서초구","성동구","성북구","송파구","양천구","영등포구","용산구","은평구","종로구","중구","중랑구"];
+        guDongMapping = {
+          gu_dong_list: {},
+          code_mapping: {}
+        };
+        seoulGu.forEach(gu => {
+          guDongMapping.gu_dong_list[gu] = [];
+        });
+        initializeSelectors();
+      }
+    }
+
+    // 셀렉터 초기화
+    function initializeSelectors() {
+      const guSelect = document.getElementById('guSelect');
+      const dongSelect = document.getElementById('dongSelect');
+
+      // 구 선택 옵션 추가
+      const guList = Object.keys(guDongMapping.gu_dong_list).sort();
+      guList.forEach(gu => {
+        const opt = document.createElement('option');
+        opt.value = gu;
+        opt.innerText = gu;
+        guSelect.appendChild(opt);
+      });
+
+      // 구 선택 이벤트
+      guSelect.addEventListener('change', function() {
+        selectedGu = this.value;
+        selectedDong = '';
+        
+        // 동 선택 초기화
+        dongSelect.innerHTML = '<option value="">-- 동을 선택하세요 --</option>';
+        
+        if (selectedGu) {
+          dongSelect.disabled = false;
+          const dongs = guDongMapping.gu_dong_list[selectedGu] || [];
+          
+          dongs.forEach(dong => {
+            const opt = document.createElement('option');
+            opt.value = dong;
+            opt.innerText = dong;
+            dongSelect.appendChild(opt);
+          });
+        } else {
+          dongSelect.disabled = true;
+        }
+      });
+
+      // 동 선택 이벤트
+      dongSelect.addEventListener('change', function() {
+        selectedDong = this.value;
+      });
+
+      // 오늘 날짜 기본값
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      document.getElementById('targetDate').value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    function init() {
+      loadGuDongMapping();
+    }
+
+    function openTab(evt, tabName){
+      currentTab = tabName;
+
+      const contents = document.getElementsByClassName("tab-content");
+      for (let i=0;i<contents.length;i++) contents[i].classList.remove("active");
+
+      const btns = document.getElementsByClassName("tab-btn");
+      for (let i=0;i<btns.length;i++){
+        btns[i].classList.remove("active");
+        btns[i].setAttribute("aria-selected","false");
+      }
+
+      document.getElementById(tabName).classList.add("active");
+      evt.currentTarget.classList.add("active");
+      evt.currentTarget.setAttribute("aria-selected","true");
+
+      // 결과 패널 모드 텍스트 업데이트
+      const mode = document.getElementById('resultMode');
+      if(tabName === 'envTab') mode.innerText = "FEATURE SIMULATION";
+      else mode.innerText = "DATE-BASED";
+    }
+
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+    async function runAI(){
+      const placeholder = document.getElementById('result-placeholder');
+      const loading = document.getElementById('loading');
+      const content = document.getElementById('result-content');
+      const status = document.getElementById('resultStatus');
+
+      // 지역 선택 검증
+      if (!selectedGu || !selectedDong) {
+        alert('구와 동을 모두 선택해주세요.');
+        return;
+      }
+
+      placeholder.style.display = 'none';
+      content.style.display = 'none';
+      loading.style.display = 'block';
+
+      status.innerText = "분석중";
+
+      try {
+        // 지역 코드 가져오기
+        const regionKey = `${selectedGu}_${selectedDong}`;
+        const regionData = guDongMapping.code_mapping[regionKey];
+        
+        let requestData = {
+          gu: selectedGu,
+          dong: selectedDong,
+          region_code: regionData ? regionData.full_code : null
+        };
+
+        if(currentTab === 'envTab'){
+          // 환경 변수 기반
+          requestData.mode = 'env';
+          requestData.min_temp = parseFloat(document.getElementById('minTemp').value);
+          requestData.ground_temp = parseFloat(document.getElementById('groundTemp').value);
+          requestData.humidity = parseFloat(document.getElementById('humidity').value);
+          requestData.pressure = parseFloat(document.getElementById('pressure').value);
+          requestData.sunshine = parseFloat(document.getElementById('sunshine').value);
+          requestData.is_holiday = parseInt(document.getElementById('isHoliday').value, 10);
+          requestData.lag_1d = parseFloat(document.getElementById('lag_1d').value);
+          requestData.lag_7d = parseFloat(document.getElementById('lag_7d').value);
+        } else {
+          // 날짜 기반
+          requestData.mode = 'date';
+          requestData.date = document.getElementById('targetDate').value;
+        }
+
+        // Flask API 호출
+        const response = await fetch('/predict', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if(data.success){
+          // UI 반영
+          document.getElementById('activeTabTag').innerText = data.tag;
+          document.getElementById('resultDesc').innerText = data.description;
+          document.getElementById('resultVal').innerText = data.prediction.toLocaleString();
+
+          // 상태 업데이트
+          status.innerText = "완료";
+
+          loading.style.display = 'none';
+          content.style.display = 'flex';
+        } else {
+          throw new Error(data.error || '예측 실패');
+        }
+
+      } catch(error) {
+        console.error('예측 오류:', error);
+        status.innerText = "오류 발생";
+        loading.style.display = 'none';
+        placeholder.style.display = 'flex';
+        alert('예측 중 오류가 발생했습니다: ' + error.message);
+      }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
