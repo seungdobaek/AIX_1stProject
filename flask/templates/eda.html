@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>탐색적 데이터 분석 (EDA)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #4834d4 0%, #686de0 100%);
+      --bg-color: #f0f2f5;
+      --card-bg: #ffffff;
+      --text-main: #1e272e;
+      --text-sub: #485460;
+      --shadow: 0 10px 30px rgba(0,0,0,0.10);
+      --accent: #4834d4;
+      --accent2: #20bf6b;
+      --accent3: #f7b731;
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      line-height: 1.7;
+    }
+
+    header {
+      background: var(--primary-gradient);
+      color: #fff;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(72,52,212,0.3);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
+
+    header p {
+      margin: 10px auto 0;
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+
+    .nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      text-decoration: none;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: 0.2s;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .nav-back:hover {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(-2px);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: -40px auto 3rem;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid #edeff2;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #2f3542;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 6px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 3px;
+    }
+
+    .insight-card {
+      background: linear-gradient(120deg, #f8faff 0%, #fff 100%);
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .insight-card h3 {
+      margin: 0 0 0.8rem 0;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .insight-card p {
+      margin: 0 0 0.8rem 0;
+      color: var(--text-sub);
+      line-height: 1.8;
+    }
+
+    .insight-card ul {
+      margin: 0.5rem 0;
+      padding-left: 1.5rem;
+    }
+
+    .insight-card li {
+      margin: 0.5rem 0;
+      color: var(--text-sub);
+      line-height: 1.7;
+    }
+
+    .highlight-box {
+      background: linear-gradient(120deg, rgba(72,52,212,0.08) 0%, rgba(104,109,224,0.08) 100%);
+      padding: 1.2rem 1.5rem;
+      border-radius: 12px;
+      margin: 1.5rem 0;
+      border-left: 4px solid var(--accent);
+    }
+
+    .highlight-box strong {
+      color: var(--accent);
+      font-weight: 900;
+      font-size: 1.05rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .stat-box {
+      background: white;
+      border: 2px solid #edeff2;
+      border-radius: 12px;
+      padding: 1.2rem;
+      text-align: center;
+      transition: 0.2s;
+    }
+
+    .stat-box:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    .stat-unit {
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      font-weight: 600;
+      margin-left: 2px;
+    }
+
+    .finding-grid {
+      display: grid;
+      gap: 1.2rem;
+      margin: 1.5rem 0;
+    }
+
+    .finding-item {
+      background: white;
+      padding: 1.3rem;
+      border-radius: 12px;
+      border-left: 4px solid var(--accent2);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .finding-item h4 {
+      margin: 0 0 0.6rem 0;
+      color: var(--accent2);
+      font-weight: 900;
+      font-size: 1.05rem;
+    }
+
+    .finding-item p {
+      margin: 0;
+      color: var(--text-sub);
+      line-height: 1.7;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(72,52,212,0.1);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 900;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    .tag.green {
+      background: rgba(32,191,107,0.1);
+      color: var(--accent2);
+    }
+
+    .tag.yellow {
+      background: rgba(247,183,49,0.1);
+      color: var(--accent3);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      background: #2f3542;
+      color: #fff;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 15px; }
+      .card { padding: 1.5rem; }
+      header h1 { font-size: 1.5rem; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📈 탐색적 데이터 분석 (EDA)</h1>
+    <p>전력 수요 데이터의 패턴과 특성 분석</p>
+    <a href="/" class="nav-back">← 대시보드로 돌아가기</a>
+  </header>
+
+  <div class="container">
+    <!-- 개요 -->
+    <div class="card">
+      <div class="section-title">EDA 개요</div>
+      <p style="font-size: 1.05rem; color: var(--text-sub); line-height: 1.9;">
+        서울시 전력 수요 데이터와 기상 데이터를 탐색하여 주요 패턴, 상관관계, 그리고 모델링에 유용한 변수를 선정하는 과정입니다.
+        지역별, 시간별, 계절별 전력 사용 패턴을 분석하고, 기상 변수와의 관계를 파악했습니다.
+      </p>
+
+      <div class="highlight-box">
+        <strong>분석 목표:</strong> 전력 수요에 영향을 미치는 주요 요인을 파악하고, 예측 모델 학습을 위한 최적의 변수 10개를 선정
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 1rem;">
+        <span class="tag">지역별 분석</span>
+        <span class="tag green">시계열 패턴</span>
+        <span class="tag yellow">상관관계 분석</span>
+        <span class="tag">변수 선택</span>
+      </div>
+    </div>
+
+    <!-- 데이터 규모 -->
+    <div class="card">
+      <div class="section-title">데이터 규모 파악</div>
+      
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">서울시 자치구</div>
+          <div class="stat-value">25<span class="stat-unit">개</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">법정동</div>
+          <div class="stat-value">466<span class="stat-unit">개</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">분석 기간</div>
+          <div class="stat-value">3<span class="stat-unit">년</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">총 데이터 행</div>
+          <div class="stat-value">750K+</div>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <h3>📊 데이터 구조</h3>
+        <p>
+          서울시 전체 25개 구, 466개의 법정동에 대해 2020년~2022년 3년간의 일별 전력 사용량 데이터를 분석했습니다.
+          각 구와 동마다 지역 특성(주거, 상업, 산업)이 다르기 때문에 전력 사용 패턴도 크게 차이가 납니다.
+        </p>
+      </div>
+    </div>
+
+    <!-- 지역별 분석 -->
+    <div class="card">
+      <div class="section-title">지역별 전력 사용량 분석</div>
+      
+      <div class="insight-card">
+        <h3>🏙️ 구별 평균 전력 사용량</h3>
+        <p>서울시 25개 구의 하루 평균 전력 사용량을 비교한 결과, 산업단지가 있는 지역의 사용량이 압도적으로 높았습니다.</p>
+        
+        <div class="finding-grid">
+          <div class="finding-item">
+            <h4>1위: 금천구</h4>
+            <p>
+              서울디지털산업단지(구로디지털단지)가 위치한 금천구는 서울시에서 가장 높은 전력 사용량을 기록했습니다.
+              산업시설의 24시간 가동으로 인해 다른 지역 대비 약 <strong>2~3배 높은 수요</strong>를 보였습니다.
+            </p>
+          </div>
+
+          <div class="finding-item">
+            <h4>2위: 은평구</h4>
+            <p>
+              은평구 역시 산업단지와 상업시설이 밀집되어 있어 높은 전력 사용량을 기록했습니다.
+            </p>
+          </div>
+
+          <div class="finding-item">
+            <h4>낮은 사용량 지역</h4>
+            <p>
+              주거 중심 지역인 노원구, 도봉구 등은 상대적으로 낮은 전력 사용량을 보였으며,
+              이는 주간 상업활동보다 야간 주거 사용이 많기 때문으로 분석됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-card">
+        <h3>🏘️ 법정동별 전력 사용량 편차</h3>
+        <p>
+          466개 법정동의 전력 사용량을 분석한 결과, 동 단위로도 큰 편차가 발견되었습니다.
+          같은 구 내에서도 동별로 주거/상업/산업 비율에 따라 사용량이 <strong>10배 이상 차이</strong>가 났습니다.
+        </p>
+        <ul>
+          <li>산업단지 인접 동: 평균 150,000+ kWh/day</li>
+          <li>상업 중심 동: 평균 80,000~120,000 kWh/day</li>
+          <li>주거 중심 동: 평균 40,000~70,000 kWh/day</li>
+        </ul>
+      </div>
+
+      <div class="highlight-box">
+        <strong>핵심 인사이트:</strong> 지역 특성(산업/상업/주거)이 전력 사용량에 가장 큰 영향을 미치므로,
+        모델 학습 시 <strong>지역 정보를 필수 변수로 포함</strong>해야 합니다.
+      </div>
+    </div>
+
+    <!-- 시간별 패턴 -->
+    <div class="card">
+      <div class="section-title">시간별 전력 사용 패턴</div>
+      
+      <div class="insight-card">
+        <h3>📅 계절별 패턴</h3>
+        <p>
+          계절에 따라 전력 사용량이 크게 변동합니다. 냉난방 수요가 많은 여름과 겨울에 사용량이 증가하는 전형적인 U자형 패턴을 보였습니다.
+        </p>
+        
+        <div class="stats-grid">
+          <div class="stat-box" style="border-color: #e74c3c;">
+            <div class="stat-label">여름 (7~8월)</div>
+            <div class="stat-value" style="color: #e74c3c;">최고</div>
+          </div>
+          <div class="stat-box" style="border-color: #3498db;">
+            <div class="stat-label">겨울 (12~2월)</div>
+            <div class="stat-value" style="color: #3498db;">높음</div>
+          </div>
+          <div class="stat-box" style="border-color: #2ecc71;">
+            <div class="stat-label">봄/가을</div>
+            <div class="stat-value" style="color: #2ecc71;">낮음</div>
+          </div>
+        </div>
+
+        <ul>
+          <li><strong>여름철 피크:</strong> 에어컨 가동으로 평균 대비 +30~40% 증가</li>
+          <li><strong>겨울철 증가:</strong> 난방 수요로 평균 대비 +20~30% 증가</li>
+          <li><strong>봄/가을:</strong> 쾌적한 날씨로 냉난방 수요 감소, 가장 낮은 사용량</li>
+        </ul>
+      </div>
+
+      <div class="insight-card">
+        <h3>📆 요일별 패턴</h3>
+        <p>
+          평일과 주말/휴일 간 뚜렷한 차이가 관찰되었습니다.
+        </p>
+        <ul>
+          <li><strong>평일 (월~금):</strong> 상업·산업 활동으로 높은 사용량 유지</li>
+          <li><strong>주말 (토~일):</strong> 평일 대비 약 15~20% 감소</li>
+          <li><strong>공휴일:</strong> 주말과 유사하거나 더 낮은 수준</li>
+        </ul>
+      </div>
+
+      <div class="insight-card">
+        <h3>🔄 월별 추세</h3>
+        <p>월별 분석 결과, 다음과 같은 패턴이 발견되었습니다:</p>
+        <div class="finding-grid">
+          <div class="finding-item">
+            <h4>피크 월</h4>
+            <p><strong>7~8월:</strong> 연중 최고 사용량 (평균 대비 +35%)</p>
+          </div>
+          <div class="finding-item">
+            <h4>높은 사용 월</h4>
+            <p><strong>12~2월:</strong> 겨울철 난방 수요 (평균 대비 +25%)</p>
+          </div>
+          <div class="finding-item">
+            <h4>낮은 사용 월</h4>
+            <p><strong>4~5월, 10~11월:</strong> 온화한 날씨 (평균 대비 -10~15%)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 기상 변수와의 관계 -->
+    <div class="card">
+      <div class="section-title">기상 변수와 전력 사용량 상관관계</div>
+      
+      <div class="insight-card">
+        <h3>🌡️ 기온의 영향</h3>
+        <p>
+          기온은 전력 사용량과 <strong>강한 비선형 상관관계</strong>를 보였습니다.
+          너무 덥거나 추울 때 전력 사용량이 급증하는 U자형 패턴이 명확히 관찰되었습니다.
+        </p>
+        
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">최고기온 상관계수</div>
+            <div class="stat-value">0.65</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">최저기온 상관계수</div>
+            <div class="stat-value">0.58</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">평균기온 상관계수</div>
+            <div class="stat-value">0.62</div>
+          </div>
+        </div>
+
+        <ul>
+          <li><strong>30°C 이상:</strong> 냉방 수요 폭증, 전력 사용량 급증</li>
+          <li><strong>5°C 이하:</strong> 난방 수요 증가, 전력 사용량 증가</li>
+          <li><strong>15~25°C:</strong> 쾌적 온도, 가장 낮은 전력 사용량</li>
+        </ul>
+      </div>
+
+      <div class="insight-card">
+        <h3>💧 습도의 영향</h3>
+        <p>
+          습도는 체감 온도에 영향을 미쳐 간접적으로 전력 사용량과 연관됩니다.
+          특히 <strong>고온 다습</strong>한 여름철에 에어컨 가동이 증가하며, 상관계수는 약 <strong>0.42</strong>로 중간 수준의 양의 상관관계를 보였습니다.
+        </p>
+      </div>
+
+      <div class="insight-card">
+        <h3>🌤️ 일조량과 일사량</h3>
+        <p>
+          일조시간과 일사량은 기온 상승과 연관되어 여름철 전력 수요 증가에 기여합니다.
+          상관계수는 약 <strong>0.35~0.40</strong> 수준으로 유의미한 양의 상관관계가 있습니다.
+        </p>
+      </div>
+
+      <div class="insight-card">
+        <h3>🌬️ 풍속과 기압</h3>
+        <p>
+          풍속과 기압은 전력 사용량과의 직접적 상관관계가 약하게 나타났습니다 (상관계수 < 0.2).
+          그러나 기상 패턴을 종합적으로 이해하는 데 도움이 되므로 모델에 포함했습니다.
+        </p>
+      </div>
+
+      <div class="highlight-box">
+        <strong>변수 선정 결과:</strong> 상관관계 분석을 통해 전력 수요 예측에 유의미한 <strong>10개의 기상 변수</strong>를 선정했습니다.<br>
+        <div style="margin-top: 0.8rem; display: flex; gap: 6px; flex-wrap: wrap;">
+          <span class="tag">평균기온</span>
+          <span class="tag">최저기온</span>
+          <span class="tag">최고기온</span>
+          <span class="tag">평균지면온도</span>
+          <span class="tag">최저지면온도</span>
+          <span class="tag green">평균상대습도</span>
+          <span class="tag green">평균현지기압</span>
+          <span class="tag yellow">합계일조시간</span>
+          <span class="tag yellow">합계일사량</span>
+          <span class="tag yellow">평균풍속</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이상치 및 특이 패턴 -->
+    <div class="card">
+      <div class="section-title">이상치 및 특이 패턴</div>
+      
+      <div class="insight-card">
+        <h3>⚠️ 금천구·은평구 이상치 분석</h3>
+        <p>
+          금천구와 은평구는 다른 지역 대비 전력 사용량이 2~3배 높아 통계적으로 이상치로 분류될 수 있습니다.
+          그러나 이는 <strong>산업단지의 실제 특성</strong>을 반영한 정상 데이터이므로 제거하지 않고 유지했습니다.
+        </p>
+      </div>
+    </div>
+
+    <!-- 핵심 발견 사항 -->
+    <div class="card" style="background: linear-gradient(135deg, #f8faff 0%, #e8eeff 100%); border: 2px solid var(--accent);">
+      <div class="section-title">💡 EDA 핵심 발견 사항</div>
+      
+      <div style="display: grid; gap: 1rem; margin-top: 1.5rem;">
+        <div style="background: white; padding: 1.3rem; border-radius: 12px; border-left: 4px solid #4834d4;">
+          <strong style="color: #4834d4; font-size: 1.05rem;">1. 지역 특성이 가장 중요한 변수</strong>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-sub); line-height: 1.7;">
+            산업/상업/주거 비율에 따라 전력 사용량이 크게 차이나므로, 지역 정보(구명, 동명)는 필수 피처입니다.
+          </p>
+        </div>
+
+        <div style="background: white; padding: 1.3rem; border-radius: 12px; border-left: 4px solid #20bf6b;">
+          <strong style="color: #20bf6b; font-size: 1.05rem;">2. 계절성과 요일 패턴이 뚜렷함</strong>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-sub); line-height: 1.7;">
+            여름/겨울 피크, 평일/주말 차이 등 시간 관련 피처가 예측 정확도를 크게 향상시킵니다.
+          </p>
+        </div>
+
+        <div style="background: white; padding: 1.3rem; border-radius: 12px; border-left: 4px solid #f7b731;">
+          <strong style="color: #f7b731; font-size: 1.05rem;">3. 기온이 핵심 기상 변수</strong>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-sub); line-height: 1.7;">
+            최고/최저/평균 기온은 냉난방 수요와 직결되어 전력 사용량 예측에 가장 강력한 변수입니다.
+          </p>
+        </div>
+
+        <div style="background: white; padding: 1.3rem; border-radius: 12px; border-left: 4px solid #e74c3c;">
+          <strong style="color: #e74c3c; font-size: 1.05rem;">4. LAG 피처의 필요성</strong>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-sub); line-height: 1.7;">
+            전력 사용량은 시계열 데이터로 과거 사용량 패턴이 미래 예측에 매우 중요한 역할을 합니다.
+            EDA 결과를 바탕으로 1일, 7일, 30일 전 데이터를 LAG 피처로 활용했습니다.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 모델링 전략 -->
+    <div class="card">
+      <div class="section-title">EDA 기반 모델링 전략</div>
+      
+      <div class="insight-card">
+        <h3>📌 최종 선정 변수 (10개)</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+          <div>
+            <strong style="color: var(--accent);">기상 변수 (5개)</strong>
+            <ul style="margin: 0.5rem 0; padding-left: 1.2rem;">
+              <li>최고기온</li>
+              <li>최저기온</li>
+              <li>평균지면온도</li>
+              <li>평균상대습도</li>
+              <li>합계일조시간</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--accent2);">시간 변수 (3개)</strong>
+            <ul style="margin: 0.5rem 0; padding-left: 1.2rem;">
+              <li>월 (Month)</li>
+              <li>요일 (DayOfWeek)</li>
+              <li>휴일 여부</li>
+            </ul>
+          </div>
+          <div>
+            <strong style="color: var(--accent3);">지역/기타 (2개)</strong>
+            <ul style="margin: 0.5rem 0; padding-left: 1.2rem;">
+              <li>시군구명</li>
+              <li>법정동명</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>다음 단계:</strong> EDA를 통해 선정한 변수들을 바탕으로 SimpleDNN, EmbeddingDNN, LightGBM, XGBoost 등 다양한 모델을 학습하고 성능을 비교합니다.
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p style="margin:0;">© 2025 전력 데이터 분석 프로젝트</p>
+    <p style="margin:10px 0 0; font-size:.9rem; opacity: 0.8;">
+      Exploratory Data Analysis Documentation
+    </p>
+  </footer>
+</body>
+</html>
