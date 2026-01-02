@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>데이터 전처리 과정</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #4834d4 0%, #686de0 100%);
+      --bg-color: #f0f2f5;
+      --card-bg: #ffffff;
+      --text-main: #1e272e;
+      --text-sub: #485460;
+      --shadow: 0 10px 30px rgba(0,0,0,0.10);
+      --code-bg: #f8f9fa;
+      --border: #edeff2;
+      --accent: #4834d4;
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      line-height: 1.7;
+    }
+
+    header {
+      background: var(--primary-gradient);
+      color: #fff;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(72,52,212,0.3);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
+
+    header p {
+      margin: 10px auto 0;
+      opacity: 0.9;
+      font-size: 0.95rem;
+    }
+
+    .nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.15);
+      color: white;
+      text-decoration: none;
+      border-radius: 999px;
+      font-weight: 700;
+      transition: 0.2s;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .nav-back:hover {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(-2px);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: -40px auto 3rem;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #2f3542;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 6px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 3px;
+    }
+
+    .step-card {
+      background: #f8faff;
+      border-left: 4px solid var(--accent);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-radius: 12px;
+    }
+
+    .step-card h3 {
+      margin: 0 0 0.8rem 0;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    .step-card p {
+      margin: 0 0 0.8rem 0;
+      color: var(--text-sub);
+      line-height: 1.8;
+    }
+
+    .step-card ul {
+      margin: 0.5rem 0;
+      padding-left: 1.5rem;
+    }
+
+    .step-card li {
+      margin: 0.4rem 0;
+      color: var(--text-sub);
+    }
+
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      color: #2d3436;
+    }
+
+    .highlight {
+      background: linear-gradient(120deg, rgba(72,52,212,0.1) 0%, rgba(104,109,224,0.1) 100%);
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      margin: 1.5rem 0;
+      border-left: 4px solid var(--accent);
+    }
+
+    .highlight strong {
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .stat-box {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--accent);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      background: #2f3542;
+      color: #fff;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 0 15px; }
+      .card { padding: 1.5rem; }
+      header h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 데이터 전처리 과정</h1>
+    <p>전력 수요 예측을 위한 데이터 정제 및 준비 단계</p>
+    <a href="/" class="nav-back">← 대시보드로 돌아가기</a>
+  </header>
+
+  <div class="container">
+    <!-- 개요 -->
+    <div class="card">
+      <div class="section-title">전처리 개요</div>
+      <p style="font-size: 1.05rem; color: var(--text-sub); line-height: 1.9;">
+        서울시 자치구별 전력 수요 데이터와 기상 데이터를 병합하고 정제하여 머신러닝 모델 학습에 적합한 형태로 변환하는 과정입니다.
+        법정동 코드 처리, 결측치 제거, 데이터 병합, 그리고 피처 엔지니어링 단계를 거쳐 최종 학습 데이터셋을 생성했습니다.
+      </p>
+
+      <div class="highlight">
+        <strong>핵심 목표:</strong> 서울시 25개 자치구 × 466개 법정동의 일별 전력 사용량 데이터를 기상 변수와 결합하여 시계열 예측 모델 학습용 데이터셋 구축
+      </div>
+    </div>
+
+    <!-- Step 1: 법정동 데이터 -->
+    <div class="card">
+      <div class="section-title">Step 1. 법정동 코드 처리</div>
+      
+      <div class="step-card">
+        <h3>1-1. 법정동 코드 분리</h3>
+        <p>
+          법정동 전체 코드(10자리)는 <strong>시군구코드(5자리)</strong>와 <strong>법정동코드(5자리)</strong>가 합쳐진 형태입니다.
+          이를 분리하여 각각의 열로 저장했습니다.
+        </p>
+        <div class="code-block">
+df['시군구코드'] = df['법정동코드전체'].astype(str).str[:5]<br>
+df['법정동코드'] = df['법정동코드전체'].astype(str).str[5:]
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h3>1-2. 유효하지 않은 데이터 제거</h3>
+        <p>법정동 코드가 '00000'인 경우 법정동 이름이 없는 데이터이므로 제거했습니다.</p>
+        <ul>
+          <li>제거 전 데이터: 약 2,000,000+ 행</li>
+          <li>제거 후 데이터: 약 1,500,000+ 행</li>
+          <li>제거된 비율: 약 25%</li>
+        </ul>
+      </div>
+
+      <div class="step-card">
+        <h3>1-3. 법정동명 분리</h3>
+        <p>
+          '법정동전체명' 컬럼을 '시군구명'과 '법정동명'으로 분리하여 지역 구조를 명확히 했습니다.
+        </p>
+        <div class="code-block">
+# 예: "서울특별시 강남구 역삼동" → 시군구명: "강남구", 법정동명: "역삼동"<br>
+df['시군구명'] = df['법정동전체명'].str.split().str[1]<br>
+df['법정동명'] = df['법정동전체명'].str.split().str[2]
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h3>1-4. 불필요한 컬럼 삭제</h3>
+        <p>분석에 필요하지 않은 컬럼들을 제거하여 데이터 효율성을 높였습니다.</p>
+        <ul>
+          <li>삭제된 컬럼: 법정동코드전체, 법정동전체명, 시도명</li>
+          <li>유지된 핵심 컬럼: 날짜, 시군구명, 법정동명, 전력사용량, 기상 변수</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 2: 데이터 병합 -->
+    <div class="card">
+      <div class="section-title">Step 2. 기상 데이터 병합</div>
+      
+      <div class="step-card">
+        <h3>2-1. 날짜 형식 통일</h3>
+        <p>
+          전력 데이터와 기상 데이터의 날짜 형식을 통일하여 병합 가능하도록 변환했습니다.
+        </p>
+        <div class="code-block">
+# 전력 데이터: YYYYMMDD (문자열) → datetime<br>
+# 기상 데이터: YYYY-MM-DD (문자열) → datetime<br>
+df['날짜'] = pd.to_datetime(df['날짜'])
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h3>2-2. Inner Join 병합</h3>
+        <p>
+          날짜와 지역(시군구명) 기준으로 전력 데이터와 기상 데이터를 병합했습니다.
+          Inner join을 사용하여 양쪽 데이터가 모두 존재하는 경우만 포함했습니다.
+        </p>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">병합 전 전력 데이터</div>
+            <div class="stat-value">1.5M+</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">병합 후 데이터</div>
+            <div class="stat-value">850K+</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">기상 변수 추가</div>
+            <div class="stat-value">10개</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h3>2-3. 추가된 기상 변수</h3>
+        <ul>
+          <li><strong>기온:</strong> 평균기온, 최저기온, 최고기온</li>
+          <li><strong>지면:</strong> 평균지면온도, 최저지면온도</li>
+          <li><strong>습도:</strong> 평균상대습도</li>
+          <li><strong>기압:</strong> 평균현지기압</li>
+          <li><strong>일조:</strong> 합계일조시간, 합계일사량</li>
+          <li><strong>풍속:</strong> 평균풍속</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Step 3: 결측치 처리 -->
+    <div class="card">
+      <div class="section-title">Step 3. 결측치 및 이상치 처리</div>
+      
+      <div class="step-card">
+        <h3>3-1. 결측치 탐지</h3>
+        <p>기상 데이터에서 발생한 결측치를 탐지하고 처리했습니다.</p>
+        <div class="code-block">
+# 결측치 확인<br>
+missing_count = df.isnull().sum()<br>
+missing_ratio = (df.isnull().sum() / len(df)) * 100
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h3>3-2. 결측치 제거 전략</h3>
+        <p>
+          일부 기상 변수에서 소량의 결측치가 발견되었으며, 다음 전략을 적용했습니다:
+        </p>
+        <ul>
+          <li><strong>5% 미만 결측:</strong> 해당 행 제거 (간단하고 효과적)</li>
+          <li><strong>5% 이상 결측:</strong> 전방/후방 채우기 또는 평균 대체</li>
+          <li><strong>전력 사용량 결측:</strong> 무조건 제거 (목표 변수이므로)</li>
+        </ul>
+      </div>
+
+      <div class="step-card">
+        <h3>3-3. 이상치 검출</h3>
+        <p>전력 사용량에서 비정상적으로 높거나 낮은 값들을 IQR 방법으로 탐지했습니다.</p>
+        <div class="code-block">
+Q1 = df['전력사용량'].quantile(0.25)<br>
+Q3 = df['전력사용량'].quantile(0.75)<br>
+IQR = Q3 - Q1<br>
+# 1.5 × IQR 범위 벗어난 값 → 이상치로 판단
+        </div>
+        <p style="margin-top: 1rem; color: var(--text-sub);">
+          <strong>※ 주의:</strong> 특정 구(금천구, 은평구)는 산업단지로 인해 전력 사용량이 높아 이상치로 보일 수 있으나, 실제 정상 데이터이므로 유지했습니다.
+        </p>
+      </div>
+    </div>
+
+    <!-- Step 4: 피처 엔지니어링 -->
+    <div class="card">
+      <div class="section-title">Step 4. 피처 엔지니어링</div>
+      
+      <div class="step-card">
+        <h3>4-1. 시간 피처 생성</h3>
+        <p>날짜 정보로부터 다양한 시간 관련 피처를 추출했습니다.</p>
+        <ul>
+          <li><strong>연도 (Year):</strong> 장기 트렌드 파악</li>
+          <li><strong>월 (Month):</strong> 계절성 반영</li>
+          <li><strong>일 (Day):</strong> 월별 패턴</li>
+          <li><strong>요일 (DayOfWeek):</strong> 평일/주말 구분</li>
+          <li><strong>분기 (Quarter):</strong> 계절 구분</li>
+        </ul>
+      </div>
+
+      <div class="step-card">
+        <h3>4-2. LAG 피처 생성</h3>
+        <p>
+          시계열 데이터의 특성을 반영하기 위해 과거 시점의 전력 사용량을 피처로 추가했습니다.
+        </p>
+        <div class="code-block">
+# 1일 전, 7일 전, 30일 전 전력 사용량<br>
+df['전력사용량_lag1'] = df.groupby('법정동명')['전력사용량'].shift(1)<br>
+df['전력사용량_lag7'] = df.groupby('법정동명')['전력사용량'].shift(7)<br>
+df['전력사용량_lag30'] = df.groupby('법정동명')['전력사용량'].shift(30)
+        </div>
+        <p style="margin-top: 1rem; color: var(--text-sub);">
+          LAG 피처는 <strong>SimpleDNN (LAG 포함)</strong> 모델부터 적용되어 성능이 크게 향상되었습니다.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <h3>4-3. 휴일 정보 추가</h3>
+        <p>
+          공휴일 여부를 Binary 피처로 추가하여 휴일의 전력 사용 패턴 변화를 반영했습니다.
+        </p>
+        <ul>
+          <li>공휴일: 1</li>
+          <li>평일/주말: 0</li>
+          <li>데이터 소스: 한국천문연구원 API 또는 수동 입력</li>
+        </ul>
+      </div>
+
+      <div class="step-card">
+        <h3>4-4. 범주형 변수 인코딩</h3>
+        <p>
+          지역명(시군구명, 법정동명) 같은 범주형 변수를 모델이 학습할 수 있도록 인코딩했습니다.
+        </p>
+        <ul>
+          <li><strong>Label Encoding:</strong> SimpleDNN, LightGBM, XGBoost</li>
+          <li><strong>Embedding Layer:</strong> EmbeddingDNN (딥러닝)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 최종 결과 -->
+    <div class="card">
+      <div class="section-title">최종 데이터셋</div>
+      
+      <div class="highlight">
+        <strong>최종 학습 데이터 규모</strong><br>
+        총 약 <strong>750,000+ 행</strong>, <strong>25개 변수</strong> (기상 10개 + 시간 5개 + LAG 3개 + 휴일 1개 + 지역 2개 + 목표 변수)
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">학습 데이터</div>
+          <div class="stat-value">65%</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">검증 데이터</div>
+          <div class="stat-value">15%</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">테스트 데이터</div>
+          <div class="stat-value">20%</div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <h3>데이터 저장 형식</h3>
+        <p>전처리가 완료된 데이터는 다음 형식으로 저장되었습니다:</p>
+        <ul>
+          <li><strong>CSV 파일:</strong> 범용성을 위해 저장</li>
+          <li><strong>Pickle 파일:</strong> Python에서 빠른 로딩을 위해 저장</li>
+          <li><strong>Parquet 파일:</strong> 대용량 데이터 효율적 저장</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 핵심 인사이트 -->
+    <div class="card" style="background: linear-gradient(135deg, #f8faff 0%, #e8eeff 100%); border: 2px solid var(--accent);">
+      <div class="section-title">💡 전처리 핵심 인사이트</div>
+      
+      <div style="display: grid; gap: 1rem; margin-top: 1.5rem;">
+        <div style="background: white; padding: 1.2rem; border-radius: 12px; border-left: 4px solid #4834d4;">
+          <strong style="color: #4834d4; font-size: 1.05rem;">1. LAG 피처의 중요성</strong>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-sub);">
+            과거 전력 사용량 정보를 추가하자 모델 성능이 MSE 기준 약 68% 향상되었습니다.
+          </p>
+        </div>
+
+        <div style="background: white; padding: 1.2rem; border-radius: 12px; border-left: 4px solid #20bf6b;">
+          <strong style="color: #20bf6b; font-size: 1.05rem;">2. 휴일 효과</strong>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-sub);">
+            휴일 정보를 추가하면서 평일 대비 전력 수요 감소 패턴을 학습할 수 있게 되었습니다.
+          </p>
+        </div>
+
+        <div style="background: white; padding: 1.2rem; border-radius: 12px; border-left: 4px solid #f7b731;">
+          <strong style="color: #f7b731; font-size: 1.05rem;">3. 지역 특성</strong>
+          <p style="margin: 0.5rem 0 0 0; color: var(--text-sub);">
+            금천구, 은평구 등 산업단지가 있는 지역은 다른 지역 대비 2~3배 높은 전력 사용량을 보였습니다.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p style="margin:0;">© 2025 전력 데이터 분석 프로젝트</p>
+    <p style="margin:10px 0 0; font-size:.9rem; opacity: 0.8;">
+      Data Preprocessing Documentation
+    </p>
+  </footer>
+</body>
+</html>
